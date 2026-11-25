@@ -1,0 +1,12 @@
+\babel@toc {polish}{}\relax 
+\contentsline {section}{\numberline {1}Przegląd systemu i architektura}{2}{section.1}%
+\contentsline {subsection}{\numberline {1.1}Struktura plików warstwy klienckiej}{2}{subsection.1.1}%
+\contentsline {section}{\numberline {2}Moduły funkcjonalne i nowości w aktualnej wersji}{2}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Autoryzacja i zarządzanie kontem}{2}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Pracownia --- liczniki, stoper i schematy}{2}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}Zarządzanie projektami i integracja z zapasami}{3}{subsection.2.3}%
+\contentsline {subsection}{\numberline {2.4}Katalog włóczek (Stash)}{3}{subsection.2.4}%
+\contentsline {subsection}{\numberline {2.5}Narzędzia dziewiarskie i generator pasków}{3}{subsection.2.5}%
+\contentsline {subsection}{\numberline {2.6}Statystyki, kalendarz i kopie zapasowe}{4}{subsection.2.6}%
+\contentsline {section}{\numberline {3}Standardy interfejsu i bezpieczeństwa danych}{4}{section.3}%
+\contentsline {section}{\numberline {4}Zestawienie głównych endpointów REST API}{5}{section.4}%

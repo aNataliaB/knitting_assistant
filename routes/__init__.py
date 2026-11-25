@@ -1,0 +1,1 @@
+# Pakiet tras REST API dla Asystenta Dziergania

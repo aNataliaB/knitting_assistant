@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="pl" data-theme="wild-rose">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#9e4f60">
+  <link rel="manifest" href="manifest.json">
+  <title>Asystent Dziergania</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div class="app-container">
+    <header>
+      <div class="top-bar">
+        <div id="userGreeting" class="user-greeting" style="display: none;">
+          Dziergaj dalej, <strong id="headerUsername"></strong>!
+        </div>
+        <button type="button" id="topSettingsBtn" class="btn-settings-top" style="display: none;"
+          onclick="openTab('settings', this)">
+          ⚙️ Ustawienia
+        </button>
+      </div>
+      <h1>🧶 Asystent Dziergania</h1>
+      <p class="subtitle">Twój cyfrowy licznik rzędów, kalkulator i magazyn włóczek</p>
+    </header>
+
+    <!-- WIDOK LOGOWANIA / REJESTRACJI -->
+    <section id="authSection" class="card">
+      <div class="auth-switch">
+        <button type="button" id="tabLogin" class="auth-tab active" onclick="switchAuthMode('login')">Logowanie</button>
+        <button type="button" id="tabRegister" class="auth-tab"
+          onclick="switchAuthMode('register')">Rejestracja</button>
+      </div>
+
+      <form id="authForm" onsubmit="handleAuthSubmit(event)" class="input-group">
+        <input type="text" id="authUsername" placeholder="Login (min. 3 znaki)" autocomplete="username" required>
+        <input type="password" id="authPassword" placeholder="Hasło (min. 6 znaków)" autocomplete="current-password"
+          required>
+        <div id="authConfirmWrap" style="display: none;">
+          <input type="password" id="authPasswordConfirm" placeholder="Powtórz hasło" autocomplete="new-password">
+        </div>
+        <div id="authError" class="error-msg" style="display: none;"></div>
+        <button type="submit" id="authSubmitBtn" class="btn-primary">Zaloguj się</button>
+      </form>
+    </section>
+
+    <!-- GŁÓWNA APLIKACJA (PO ZALOGOWANIU) -->
+    <div id="appSection" style="display: none;">
+      <nav class="tabs">
+        <button type="button" class="tab-btn active" onclick="openTab('counter', this)">Pracownia</button>
+        <button type="button" class="tab-btn" onclick="openTab('projects', this)">Projekty</button>
+        <button type="button" class="tab-btn" onclick="openTab('tools', this)">Narzędzia</button>
+        <button type="button" class="tab-btn" onclick="openTab('yarns', this)">Włóczki</button>
+        <button type="button" class="tab-btn" onclick="openTab('glossary', this)">Skróty</button>
+        <button type="button" class="tab-btn" onclick="openTab('stats', this)">Statystyki</button>
+        <button type="button" class="tab-btn" onclick="openTab('calendar', this)">Kalendarz</button>
+      </nav>
+
+      <!-- ZAKŁADKA: ZARZĄDZANIE PROJEKTAMI -->
+      <main id="projects" class="tab-content">
+        <details class="card collapsible-card" open>
+          <summary class="section-summary"><span id="projectFormHeading">Dodaj nowy projekt</span><span
+              class="chevron">▾</span></summary>
+          <div class="section-body">
+            <form id="projectForm" onsubmit="saveProjectForm(event)" class="project-form">
+              <div class="form-section-title">Podstawowe informacje</div>
+              <div class="calc-grid">
+                <div><label for="projectName">Nazwa projektu *</label><input id="projectName" maxlength="120" required
+                    placeholder="np. Sweter jesienny"></div>
+                <div><label for="projectCategory">Rodzaj projektu</label><select id="projectCategory">
+                    <option value="">Wybierz kategorię</option>
+                    <option>Sweter</option>
+                    <option>Kardigan</option>
+                    <option>Czapka</option>
+                    <option>Szal / chusta</option>
+                    <option>Skarpetki</option>
+                    <option>Koc</option>
+                    <option>Amigurumi</option>
+                    <option>Inne</option>
+                  </select></div>
+                <div><label for="needleSize">Druty / szydełko</label><input id="needleSize"
+                    placeholder="np. druty 4,5 mm, żyłka 80 cm"></div>
+                <div><label for="projectDifficulty">Poziom trudności</label><select id="projectDifficulty">
+                    <option value="">Nie określono</option>
+                    <option>Początkujący</option>
+                    <option>Średniozaawansowany</option>
+                    <option>Zaawansowany</option>
+                  </select></div>
+                <div><label for="projectStartDate">Data rozpoczęcia</label><input id="projectStartDate" type="date">
+                </div>
+                <div><label for="projectTargetDate">Planowana data zakończenia</label><input id="projectTargetDate"
+                    type="date"></div>
+                <div><label for="projectStatusInput">Status</label><select id="projectStatusInput">
+                    <option value="in_progress">W trakcie</option>
+                    <option value="paused">Odłożony</option>
+                    <option value="completed">Ukończony</option>
+                  </select></div>
+                <div><label for="projectSize">Rozmiar / wariant</label><input id="projectSize"
+                    placeholder="np. M, 38/40, 90 × 120 cm"></div>
+                <div><label for="projectTargetRows">Docelowa liczba rzędów (cel)</label><input id="projectTargetRows"
+                    type="number" min="0" value="0" placeholder="np. 140"></div>
+              </div>
+              <div class="form-section-title">Wzór i materiały (powiązanie z zapasami)</div>
+              <div class="calc-grid">
+                <div class="full-span"><label for="projectSourceUrl">Link do wzoru / inspiracji</label><input
+                    id="projectSourceUrl" type="url" placeholder="https://... (np. Ravelry, blog, PDF)"></div>
+                <div>
+                  <label for="projectYarnSelect">Wybierz włóczkę z zapasów (opcjonalnie)</label>
+                  <select id="projectYarnSelect" onchange="onProjectYarnSelect()">
+                    <option value="">— Wpisz ręcznie poniżej —</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="projectYarnSkeinsUsed">Planowana liczba motków</label>
+                  <input id="projectYarnSkeinsUsed" type="number" step="0.5" min="0" value="0" placeholder="np. 4"
+                    oninput="checkProjectYarnAvailability()">
+                </div>
+                <div id="projectYarnStockWarning" class="full-span shaping-alert" style="display: none;"></div>
+                <div class="full-span">
+                  <label class="checkbox-inline">
+                    <input type="checkbox" id="projectDeductYarn">
+                    Odejmij te motki ze stanu w zapasach włóczek po zapisaniu
+                  </label>
+                </div>
+                <div><label for="projectYarnDetails">Opis włóczki w projekcie</label><input id="projectYarnDetails"
+                    placeholder="marka, skład, kolor, numer partii"></div>
+                <div><label for="projectGauge">Próbka</label><input id="projectGauge"
+                    placeholder="np. 22 oczka × 30 rzędów / 10 cm"></div>
+                <div><label for="projectDimensions">Wymiary / pomiary</label><input id="projectDimensions"
+                    placeholder="np. obwód klatki 96 cm"></div>
+                <div><label for="projectPhoto">Zdjęcie projektu (automatyczna kompresja)</label><input id="projectPhoto"
+                    type="file" accept="image/*"></div>
+              </div>
+              <div><label for="projectFormNotes">Notatki, opis wzoru, kolejność kolorów</label><textarea
+                  id="projectFormNotes" rows="4" maxlength="5000"
+                  placeholder="Ważne informacje, modyfikacje wzoru, partie włóczki..."></textarea></div>
+              <div><label for="shapingRuleInput">Przypomnienie przy rzędach</label><input id="shapingRuleInput"
+                  maxlength="200" placeholder="np. dodaj 2 oczka co 6 rzędów"></div>
+              <div class="project-form-actions"><button type="submit" id="projectSubmitBtn" class="btn-primary">＋ Dodaj
+                  projekt</button><button type="button" class="btn-small" id="cancelProjectEdit"
+                  onclick="resetProjectForm()" hidden>Anuluj edycję</button></div>
+              <p class="info-text">Pola poza nazwą są opcjonalne. Projekt można później edytować.</p>
+            </form>
+          </div>
+        </details>
+
+        <section class="card">
+          <div class="section-body">
+            <h2>Twoje projekty</h2>
+            <div class="project-filter-row">
+              <input type="search" id="projectSearch" placeholder="🔎 Szukaj po nazwie, włóczce lub kategorii"
+                oninput="renderProjectList()">
+              <select id="projectFilter" onchange="renderProjectList()">
+                <option value="all">Wszystkie statusy</option>
+                <option value="in_progress">W trakcie</option>
+                <option value="paused">Odłożone</option>
+                <option value="completed">Ukończone</option>
+              </select>
+            </div>
+            <ul id="projectList" class="project-list"></ul>
+          </div>
+        </section>
+
+        <details class="card collapsible-card" id="projectDetailsCard" open>
+          <summary class="section-summary"><span>Szczegóły, checklista i historia projektu</span><span
+              class="chevron">▾</span></summary>
+          <div class="section-body">
+            <div id="projectDetailsSummary" class="project-detail-summary">Wybierz projekt z listy, aby zobaczyć jego
+              szczegóły.</div>
+            <div class="project-detail-actions">
+              <button type="button" class="btn-small" onclick="editCurrentProject()">✏️ Edytuj projekt</button>
+              <button type="button" class="btn-small" onclick="duplicateCurrentProject()">📋 Duplikuj (szablon)</button>
+              <button type="button" class="btn-danger" onclick="deleteCurrentProject()">Usuń projekt</button>
+              <button type="button" class="btn-small" onclick="goToCounterTab()">Przejdź do liczenia →</button>
+            </div>
+
+            <!-- Lista kontrolna etapów projektu -->
+            <div class="extended-panel">
+              <h3>✅ Lista kontrolna etapów projektu</h3>
+              <div class="inline-form">
+                <input id="checklistNewTitle" type="text" maxlength="180"
+                  placeholder="np. Zrobić i wyprać próbkę, Oddzielić rękawy, Blokowanie...">
+                <button type="button" class="btn-primary" onclick="addChecklistItem()">Dodaj etap</button>
+              </div>
+              <ul id="projectChecklistList" class="simple-list"></ul>
+            </div>
+
+            <div class="notes-header" style="margin-top: 14px;"><label for="projectNotes">Notatki i opis
+                projektu</label><span id="saveStatus" class="save-status">Zapisano w bazie</span></div>
+            <textarea id="projectNotes" rows="4" placeholder="Notatki, modyfikacje wzoru..."
+              oninput="onNotesInput()"></textarea>
+
+            <div class="extended-panel">
+              <h3>📖 Dziennik postępów</h3>
+              <div class="inline-form"><input id="historyNote" type="text" maxlength="1000"
+                  placeholder="Co dziś udało się zrobić?"><button type="button" class="btn-primary"
+                  onclick="saveProgressNote()">Zapisz wpis</button></div>
+              <ul id="projectHistoryList" class="simple-list"></ul>
+            </div>
+          </div>
+        </details>
+      </main>
+
+      <!-- ZAKŁADKA: LICZENIE DLA WYBRANEGO PROJEKTU -->
+      <main id="counter" class="tab-content active">
+        <section class="card">
+          <div class="section-body">
+            <div class="counter-top-row">
+              <h2>Pracownia — liczniki i czas</h2>
+              <button type="button" id="focusModeBtn" class="btn-wakelock" onclick="toggleFocusMode()">
+                🎯 Tryb skupienia
+              </button>
+            </div>
+            <label for="counterProjectSelect">Projekt, nad którym teraz pracujesz</label><select
+              id="counterProjectSelect" class="full-width" onchange="selectProject(Number(this.value))"></select>
+          </div>
+        </section>
+
+        <details class="card collapsible-card" id="activeProjectCard" style="display:none" open>
+          <summary class="section-summary"><span id="currentProjectSummaryTitle">Aktywny projekt</span><span
+              class="chevron">▾</span></summary>
+          <div class="section-body">
+            <div class="project-header">
+              <div>
+                <h2 id="currentProjectTitle">Nazwa projektu</h2>
+                <div class="project-meta-row"><span id="currentProjectTools" class="badge"></span><select
+                    id="projectStatusSelect" class="status-select" onchange="changeProjectStatus()">
+                    <option value="in_progress">W trakcie</option>
+                    <option value="paused">Odłożony</option>
+                    <option value="completed">Ukończony</option>
+                  </select></div>
+              </div>
+              <div class="project-header-actions">
+                <button type="button" class="btn-small" onclick="undoLastRowStep()"
+                  title="Cofnij ostatnią zmianę rzędów">↩️ Cofnij</button>
+                <button type="button" id="wakeLockBtn" onclick="toggleWakeLock()" class="btn-wakelock">☀️ Ekran</button>
+              </div>
+            </div>
+
+            <!-- Ostrzeżenie o brakującej włóczce w zapasach -->
+            <div id="counterYarnAlert" class="shaping-alert" style="display: none; margin-bottom: 12px;"></div>
+
+            <!-- Pasek postępu względem docelowej liczby rzędów -->
+            <div id="rowProgressWrap" class="progress-goal-box" style="display: none;">
+              <div class="progress-goal-header">
+                <span id="rowProgressText">Postęp: 0 / 0 rz. (0%)</span>
+                <span id="rowEtaText" class="eta-badge"></span>
+              </div>
+              <div class="progress-track">
+                <div id="rowProgressBar" class="progress-fill" style="width: 0%;"></div>
+              </div>
+            </div>
+
+            <div class="counter-box"><span class="counter-label">Aktualny rząd (główny)</span>
+              <div class="counter-display" id="rowCount">0</div>
+              <div class="counter-controls"><button type="button" onclick="changeRow(-1)"
+                  class="btn-counter minus">−</button><button type="button" onclick="changeRow(1)"
+                  class="btn-counter plus">+ 1 rząd</button></div>
+
+              <!-- Szybkie przeskoczenie do konkretnego rzędu -->
+              <div class="jump-row-box">
+                <input type="number" id="jumpRowInput" min="0" placeholder="Nr rzędu" aria-label="Docelowy numer rzędu">
+                <button type="button" class="btn-small" onclick="jumpToRow()">Skocz do rzędu</button>
+              </div>
+
+              <button type="button" onclick="resetRow()" class="btn-link">Zeruj licznik rzędów</button>
+            </div>
+
+            <!-- Szybki podgląd notatek i wzoru bezpośrednio w Pracowni -->
+            <details class="extended-panel quick-notes-panel" id="counterQuickNotesPanel">
+              <summary class="quick-notes-summary">
+                <span>📝 Notatki i wzór aktywnego projektu</span>
+                <span class="chevron">▾</span>
+              </summary>
+              <div class="quick-notes-body">
+                <div id="counterPatternMeta" class="quick-pattern-meta"></div>
+                <textarea id="counterQuickNotes" rows="4"
+                  placeholder="Wpisz lub podejrzyj notatki do wzoru bez wychodzenia z Pracowni..."
+                  oninput="onCounterQuickNotesInput()"></textarea>
+                <div class="quick-notes-footer">
+                  <span id="counterQuickNotesStatus" class="save-status">Zsynchronizowano z projektem</span>
+                  <a id="counterPatternLink" href="#" target="_blank" rel="noopener noreferrer"
+                    style="display:none;">Otwórz wzór ↗</a>
+                </div>
+              </div>
+            </details>
+
+            <!-- Dodatkowy licznik pomocniczy (szybki) -->
+            <div class="sub-counter-box">
+              <span>Licznik pomocniczy (sekcja / rękaw): <strong id="secondaryRowCount">0</strong></span>
+              <div>
+                <button type="button" onclick="changeSecondaryRow(-1)" class="btn-small">−</button>
+                <button type="button" onclick="changeSecondaryRow(1)" class="btn-small">+1</button>
+                <button type="button" onclick="resetSecondaryRow()" class="btn-small">0</button>
+              </div>
+            </div>
+
+            <div class="sub-counter-box"><span>Oczka w bieżącym rzędzie: <strong id="stitchCount">0</strong></span>
+              <div><button type="button" onclick="changeStitch(-1)" class="btn-small">−</button><button type="button"
+                  onclick="changeStitch(1)" class="btn-small">+1</button><button type="button"
+                  onclick="changeStitch(10)" class="btn-small">+10</button><button type="button" onclick="resetStitch()"
+                  class="btn-small">0</button></div>
+            </div>
+
+            <div class="sub-counter-box"><span>Powtórzenia wzoru: <strong id="repeatCount">0</strong></span>
+              <div><button type="button" onclick="changeRepeat(-1)" class="btn-small">−</button><button type="button"
+                  onclick="changeRepeat(1)" class="btn-small">+</button><button type="button" onclick="resetRepeat()"
+                  class="btn-small">0</button></div>
+            </div>
+
+            <!-- Wiele nazwanych mini-liczników w projekcie -->
+            <div class="extended-panel focus-hide">
+              <h3>🔢 Dodatkowe mini-liczniki projektu</h3>
+              <div class="inline-form">
+                <input id="newSubcounterName" type="text" maxlength="80"
+                  placeholder="np. Lewy rękaw, Prawy rękaw, Dekolt...">
+                <button type="button" class="btn-primary" onclick="addSubcounter()">Dodaj</button>
+              </div>
+              <div id="subcountersList" class="subcounters-grid"></div>
+            </div>
+
+            <!-- Interaktywny podgląd schematu wzoru z ruchomą linijką -->
+            <div class="extended-panel focus-hide">
+              <h3>📐 Schemat wzoru z linijką rzędów</h3>
+              <div class="inline-form">
+                <label class="btn-photo-label" style="margin:0;">
+                  🖼️ Wgraj obraz schematu
+                  <input type="file" id="chartFileInput" accept="image/*" onchange="handleChartUpload(event)"
+                    style="display:none;">
+                </label>
+                <button type="button" id="removeChartBtn" class="btn-small" onclick="removeProjectChart()"
+                  style="display:none;">Usuń schemat</button>
+              </div>
+              <div id="chartTrackerBox" style="display:none; margin-top: 10px;">
+                <div class="calc-grid" style="margin-bottom: 8px;">
+                  <div>
+                    <label for="chartTotalRowsInput">Liczba rzędów na schemacie:</label>
+                    <input type="number" id="chartTotalRowsInput" min="1" value="20" onchange="updateChartSettings()">
+                  </div>
+                  <div>
+                    <label for="chartCurrentRowInput">Linijka na rzędzie schematu:</label>
+                    <input type="number" id="chartCurrentRowInput" min="1" value="1" onchange="updateChartSettings()">
+                  </div>
+                </div>
+                <label class="checkbox-inline" style="margin-bottom: 8px;">
+                  <input type="checkbox" id="chartSyncWithMain" checked>
+                  Przesuwaj linijkę automatycznie po kliknięciu „+ 1 rząd”
+                </label>
+                <div class="chart-stage" id="chartStage">
+                  <img id="chartImageEl" alt="Schemat dziewiarski">
+                  <div id="chartRulerLine" class="chart-ruler">
+                    <span id="chartRulerBadge">Rząd 1</span>
+                  </div>
+                </div>
+                <div class="timer-controls" style="margin-top:8px;">
+                  <button type="button" class="btn-small" onclick="stepChartRow(-1)">↓ Linijka w dół</button>
+                  <button type="button" class="btn-small" onclick="stepChartRow(1)">↑ Linijka w górę</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="shaping-box"><label for="counterShapingRule">Przypomnienie przy rzędach</label><input
+                type="text" id="counterShapingRule" placeholder="np. dodaj oczka co 6 rzędów"
+                oninput="onShapingInput()">
+              <div id="shapingAlert" class="shaping-alert" style="display:none"></div>
+            </div>
+
+            <div class="extended-panel focus-hide">
+              <h3>⏱️ Czas dziergania tego projektu</h3>
+              <div id="knittingTimerDisplay" class="timer-display">00:00:00</div>
+              <div class="timer-controls"><button type="button" class="btn-primary" onclick="startKnittingTimer()">▶
+                  Start</button><button type="button" class="btn-small" onclick="pauseKnittingTimer()">⏸ Pauza /
+                  Zapisz</button><button type="button" class="btn-small" onclick="resetKnittingTimer()">↻
+                  Wyzeruj</button></div>
+              <p id="timerStatus" class="info-text">Czas zapisuje się osobno dla wybranego projektu.</p>
+            </div>
+          </div>
+        </details>
+      </main>
+
+      <!-- ZAKŁADKA 2: NARZĘDZIA DZIEWIARSKIE -->
+      <main id="tools" class="tab-content">
+        <!-- 1. Kalkulator próbki -->
+        <details class="card collapsible-card" open>
+          <summary class="section-summary">
+            <span>1. Kalkulator Próbki (Gauge)</span>
+            <span class="chevron">▾</span>
+          </summary>
+          <div class="section-body">
+            <p class="info-text">Zmierz próbkę (np. 10x10 cm) i wpisz wymiar docelowy.</p>
+
+            <div class="calc-grid">
+              <div>
+                <label for="swatchWidthCm">Szerokość próbki (cm):</label>
+                <input type="number" step="0.1" id="swatchWidthCm" value="10">
+              </div>
+              <div>
+                <label for="swatchStitches">Liczba oczek w próbce:</label>
+                <input type="number" id="swatchStitches" placeholder="np. 22">
+              </div>
+              <div>
+                <label for="swatchHeightCm">Wysokość próbki (cm):</label>
+                <input type="number" step="0.1" id="swatchHeightCm" value="10">
+              </div>
+              <div>
+                <label for="swatchRows">Liczba rzędów w próbce:</label>
+                <input type="number" id="swatchRows" placeholder="np. 30">
+              </div>
+            </div>
+
+            <hr>
+
+            <div class="calc-grid">
+              <div>
+                <label for="targetWidthCm">Docelowa szerokość (cm):</label>
+                <input type="number" step="0.1" id="targetWidthCm" placeholder="np. 50">
+              </div>
+              <div>
+                <label for="targetHeightCm">Docelowa wysokość (cm):</label>
+                <input type="number" step="0.1" id="targetHeightCm" placeholder="np. 60">
+              </div>
+            </div>
+
+            <button type="button" onclick="calculateGauge()" class="btn-primary full-width">Oblicz oczka i
+              rzędy</button>
+
+            <div id="calcResult" class="result-box" style="display: none;">
+              <p>Musisz nabrać: <strong id="resStitches">0</strong> oczek</p>
+              <p>Musisz przerobić: <strong id="resRows">0</strong> rzędów</p>
+              <button type="button" onclick="appendGaugeToNotes()" class="btn-outline-action">
+                + Dopisz wynik do notatek aktywnego projektu
+              </button>
+            </div>
+          </div>
+        </details>
+
+        <!-- 2. Przelicznik dodawania / odejmowania oczek -->
+        <details class="card collapsible-card" open>
+          <summary class="section-summary">
+            <span>2. Równomierne dodawanie / odejmowanie oczek</span>
+            <span class="chevron">▾</span>
+          </summary>
+          <div class="section-body">
+            <p class="info-text">Oblicz, jak równomiernie zmienić liczbę oczek na jednym rzędzie (np. przy ściągaczu lub
+              karczku).</p>
+
+            <div class="calc-grid">
+              <div>
+                <label for="currentStitchesInput">Aktualna liczba oczek:</label>
+                <input type="number" id="currentStitchesInput" placeholder="np. 120">
+              </div>
+              <div>
+                <label for="targetStitchesInput">Docelowa liczba oczek:</label>
+                <input type="number" id="targetStitchesInput" placeholder="np. 96">
+              </div>
+            </div>
+
+            <button type="button" onclick="calculateShaping()" class="btn-primary full-width">Wyznacz rozkład
+              oczek</button>
+
+            <div id="shapingResult" class="result-box" style="display: none;"></div>
+          </div>
+        </details>
+
+        <!-- 3. Kalkulator zapotrzebowania na włóczkę -->
+        <details class="card collapsible-card" open>
+          <summary class="section-summary">
+            <span>3. Kalkulator Zapotrzebowania na Włóczkę</span>
+            <span class="chevron">▾</span>
+          </summary>
+          <div class="section-body">
+            <p class="info-text">Oszacuj liczbę motków na podstawie zważonej próbki lub jej metrażu.</p>
+
+            <div class="calc-grid">
+              <div>
+                <label for="swatchAreaCm2">Powierzchnia próbki (cm²):</label>
+                <input type="number" id="swatchAreaCm2" value="100" placeholder="10x10 cm = 100">
+              </div>
+              <div>
+                <label for="swatchWeightG">Waga próbki (g):</label>
+                <input type="number" step="0.1" id="swatchWeightG" placeholder="np. 6.5">
+              </div>
+              <div>
+                <label for="projectAreaCm2">Powierzchnia robótki (cm²):</label>
+                <input type="number" id="projectAreaCm2" placeholder="np. 4500">
+              </div>
+              <div>
+                <label for="skeinWeightG">Waga 1 motka (g):</label>
+                <input type="number" id="skeinWeightG" value="100">
+              </div>
+              <div>
+                <label for="skeinLengthM">Metraż 1 motka (m):</label>
+                <input type="number" id="skeinLengthM" placeholder="np. 210">
+              </div>
+              <div>
+                <label for="yarnBufferPct">Zapas bezpieczeństwa (%):</label>
+                <input type="number" id="yarnBufferPct" value="15">
+              </div>
+            </div>
+
+            <button type="button" onclick="calculateYarnNeeded()" class="btn-primary full-width">Oblicz ile włóczki
+              kupić</button>
+
+            <div id="yarnCalcResult" class="result-box" style="display: none;"></div>
+          </div>
+        </details>
+
+        <!-- 4. Kalkulator długości elementu i postępu rzędów -->
+        <details class="card collapsible-card" open>
+          <summary class="section-summary">
+            <span>4. Kalkulator Długości Robótki i Postępu (cm ↔ rzędy)</span>
+            <span class="chevron">▾</span>
+          </summary>
+          <div class="section-body">
+            <p class="info-text">Oblicz, ile rzędów potrzeba na wybrany odcinek i ustaw tę liczbę jako cel w aktywnym
+              projekcie.</p>
+            <div class="calc-grid">
+              <div>
+                <label for="lenSwatchHeightCm">Wysokość próbki (cm):</label>
+                <input type="number" step="0.1" id="lenSwatchHeightCm" value="10">
+              </div>
+              <div>
+                <label for="lenSwatchRows">Liczba rzędów w próbce:</label>
+                <input type="number" id="lenSwatchRows" placeholder="np. 28">
+              </div>
+              <div>
+                <label for="lenTargetCm">Docelowa długość elementu (cm):</label>
+                <input type="number" step="0.5" id="lenTargetCm" placeholder="np. 42">
+              </div>
+              <div>
+                <label for="lenCurrentRows">Aktualny rząd (puste = z aktywnego projektu):</label>
+                <input type="number" id="lenCurrentRows" placeholder="np. 65">
+              </div>
+            </div>
+            <button type="button" onclick="calculateLengthProgress()" class="btn-primary full-width">Oblicz długość i
+              postęp</button>
+            <div id="lengthProgressResult" class="result-box" style="display: none;"></div>
+          </div>
+        </details>
+
+        <!-- 5. Generator pasków (Stripe Generator) -->
+        <details class="card collapsible-card" open>
+          <summary class="section-summary">
+            <span>5. Generator Pasków (Stripe Generator)</span>
+            <span class="chevron">▾</span>
+          </summary>
+          <div class="section-body">
+            <p class="info-text">Zaprojektuj rytmiczne, lustrzane lub losowe paski z wagami kolorów i sprawdź rozkład
+              rzędów na schemacie.</p>
+            <div class="calc-grid">
+              <div>
+                <label for="stripeTotalRows">Łączna liczba rzędów:</label>
+                <input type="number" id="stripeTotalRows" min="4" max="500" value="48">
+              </div>
+              <div>
+                <label for="stripeMode">Tryb układu pasów:</label>
+                <select id="stripeMode">
+                  <option value="random">Losowe szerokości (harmonijne)</option>
+                  <option value="weighted">Losowe z wagami kolorów</option>
+                  <option value="symmetric">Powtarzalność symetryczna (lustrzana)</option>
+                  <option value="sequence">Powtarzalna sekwencja (np. 6, 2, 4)</option>
+                </select>
+              </div>
+              <div class="full-span">
+                <label for="stripeWidths">Szerokości pasów w rzędach (po przecinku):</label>
+                <input type="text" id="stripeWidths" value="2, 4, 6, 8">
+              </div>
+              <div class="full-span">
+                <label>Kolory pasów oraz wagi udziału (do trybu z wagami):</label>
+                <div class="stripe-colors-grid">
+                  <div class="stripe-color-card">
+                    <input type="color" id="stripeColor1" value="#9e4f60" title="Kolor A">
+                    <span>Kolor A</span>
+                    <input type="number" id="stripeWeight1" min="1" max="10" value="4" title="Waga koloru A">
+                  </div>
+                  <div class="stripe-color-card">
+                    <input type="color" id="stripeColor2" value="#e8cfc8" title="Kolor B">
+                    <span>Kolor B</span>
+                    <input type="number" id="stripeWeight2" min="1" max="10" value="2" title="Waga koloru B">
+                  </div>
+                  <div class="stripe-color-card">
+                    <input type="color" id="stripeColor3" value="#5d736f" title="Kolor C">
+                    <label class="checkbox-inline"><input type="checkbox" id="stripeUseColor3" checked> Kolor C</label>
+                    <input type="number" id="stripeWeight3" min="1" max="10" value="1" title="Waga koloru C">
+                  </div>
+                </div>
+              </div>
+            </div>
+            <button type="button" onclick="generateStripes()" class="btn-primary full-width">Wygeneruj układ
+              pasków</button>
+            <div id="stripeResultBox" class="result-box" style="display:none;">
+              <div id="stripePreviewBar" class="stripe-preview-bar" aria-label="Podgląd proporcji pasków"></div>
+              <div id="stripeLegend" class="stripe-legend"></div>
+              <div id="stripeGridDiagram" class="stripe-diagram" aria-label="Schemat rozkładu rzędów"></div>
+              <p id="stripeSummaryText" style="margin-top:10px;"></p>
+              <button type="button" onclick="appendStripesToNotes()" class="btn-outline-action">
+                + Zapisz schemat pasków w notatkach projektu
+              </button>
+            </div>
+          </div>
+        </details>
+      </main>
+
+      <!-- ZAKŁADKA 3: KATALOG WŁÓCZEK (STASH) -->
+      <main id="yarns" class="tab-content">
+        <details class="card collapsible-card" id="yarnFormCard" open>
+          <summary class="section-summary">
+            <span id="yarnFormHeading">Dodaj Włóczkę do Zapasów (Stash)</span>
+            <span class="chevron">▾</span>
+          </summary>
+          <div class="section-body">
+            <div class="input-group">
+              <input type="text" id="yarnName" placeholder="Nazwa i skład (np. Drops Merino Extra Fine 100% wełna)">
+              <input type="text" id="yarnColorLot" placeholder="Kolor i nr partii / dye lot (np. 17 wrzos, lot 4821)">
+              <div class="calc-grid">
+                <div>
+                  <label for="yarnWeightG">Waga motka (g):</label>
+                  <input type="number" id="yarnWeightG" value="50">
+                </div>
+                <div>
+                  <label for="yarnLengthM">Metraż motka (m):</label>
+                  <input type="number" id="yarnLengthM" value="105">
+                </div>
+                <div>
+                  <label for="yarnSkeins">Liczba motków:</label>
+                  <input type="number" step="0.5" id="yarnSkeins" value="1">
+                </div>
+                <div>
+                  <label for="yarnStatus">Status:</label>
+                  <select id="yarnStatus" class="form-select">
+                    <option value="in_stash">W zapasie</option>
+                    <option value="in_use">W robótce</option>
+                    <option value="used_up">Zużyta</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="photo-upload-box">
+                <label for="yarnPhotoInput" class="btn-photo-label">
+                  📷 Zrób zdjęcie motka lub wybierz z galerii
+                </label>
+                <input type="file" id="yarnPhotoInput" accept="image/*" capture="environment"
+                  onchange="handleYarnPhotoChange(event)" style="display: none;">
+                <div id="yarnPhotoPreviewWrap" class="photo-preview-wrap" style="display: none;">
+                  <img id="yarnPhotoPreview" alt="Podgląd włóczki">
+                  <button type="button" onclick="clearYarnPhoto()" class="btn-link">Usuń zdjęcie</button>
+                </div>
+              </div>
+
+              <div class="calc-grid">
+                <input type="text" id="yarnBrand" placeholder="Marka / producent">
+                <input type="text" id="yarnFiber" placeholder="Skład (np. 80% wełna, 20% alpaka)">
+                <input type="text" id="yarnNeedleSize" placeholder="Zalecane druty (np. 4 mm)">
+                <input type="text" id="yarnCare" placeholder="Pielęgnacja (np. pranie ręczne)">
+                <input type="number" id="yarnPrice" min="0" step="0.01" placeholder="Cena zakupu (zł)">
+                <input type="text" id="yarnLocation" placeholder="Miejsce przechowywania">
+              </div>
+              <input type="text" id="yarnNotes" placeholder="Dodatkowe notatki (np. sklep, projekt)">
+              <div class="project-form-actions">
+                <button type="button" id="yarnSubmitBtn" onclick="saveYarnForm()" class="btn-primary">Zapisz
+                  włóczkę</button>
+                <button type="button" id="cancelYarnEditBtn" onclick="resetYarnForm()" class="btn-small" hidden>Anuluj
+                  edycję</button>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <details class="card collapsible-card" open>
+          <summary class="section-summary">
+            <span>Twoje Zapasy Włóczek <small id="stashSummary" class="badge">0 motków · 0 m</small></span>
+            <span class="chevron">▾</span>
+          </summary>
+          <div class="section-body">
+            <div class="project-filter-row">
+              <input type="search" id="yarnSearch" placeholder="🔎 Szukaj po nazwie, kolorze, składzie..."
+                oninput="renderYarnList()">
+              <input type="number" id="yarnMinMetersFilter" min="0" step="50" placeholder="Min. metrów (np. 600)"
+                oninput="renderYarnList()">
+            </div>
+            <ul id="yarnList" class="yarn-list"></ul>
+          </div>
+        </details>
+      </main>
+
+      <!-- ZAKŁADKA 4: SŁOWNIK SKRÓTÓW I ROZMIARY DRUTÓW NA DOLE -->
+      <main id="glossary" class="tab-content">
+        <details class="card collapsible-card" open>
+          <summary class="section-summary">
+            <span>Popularne Skróty (EN / PL)</span>
+            <span class="chevron">▾</span>
+          </summary>
+          <div class="section-body">
+            <table class="glossary-table">
+              <thead>
+                <tr>
+                  <th>EN</th>
+                  <th>PL</th>
+                  <th>Znaczenie</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>st / sts</strong></td>
+                  <td>o.</td>
+                  <td>oczko / oczka</td>
+                </tr>
+                <tr>
+                  <td><strong>k (knit)</strong></td>
+                  <td>o.p.</td>
+                  <td>oczko prawe</td>
+                </tr>
+                <tr>
+                  <td><strong>p (purl)</strong></td>
+                  <td>o.l.</td>
+                  <td>oczko lewe</td>
+                </tr>
+                <tr>
+                  <td><strong>yo (yarn over)</strong></td>
+                  <td>narz.</td>
+                  <td>narzut (dodanie oczka)</td>
+                </tr>
+                <tr>
+                  <td><strong>k2tog</strong></td>
+                  <td>2 o.p. razem</td>
+                  <td>2 oczka prawe razem (zwężanie)</td>
+                </tr>
+                <tr>
+                  <td><strong>ssk</strong></td>
+                  <td>2 o.p. na lewo</td>
+                  <td>zdjąć 2 oczka, przerobić razem na prawo</td>
+                </tr>
+                <tr>
+                  <td><strong>selvedge st.</strong></td>
+                  <td>o.brz.</td>
+                  <td>oczko brzegowe</td>
+                </tr>
+                <tr>
+                  <td><strong>sl st</strong></td>
+                  <td>o.ś.</td>
+                  <td>oczko ścisłe (szydełko)</td>
+                </tr>
+                <tr>
+                  <td><strong>sc (US) / dc (UK)</strong></td>
+                  <td>płs.</td>
+                  <td>półsłupek (szydełko)</td>
+                </tr>
+                <tr>
+                  <td><strong>dc (US) / tr (UK)</strong></td>
+                  <td>sł.</td>
+                  <td>słupek (szydełko)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </details>
+
+        <!-- ROZMIARY DRUTÓW I SZYDEŁEK W OSTATNIEJ SEKCJI NA DOLE -->
+        <details class="card collapsible-card" open>
+          <summary class="section-summary">
+            <span>Rozmiary Drutów i Szydełek (mm / US / UK)</span>
+            <span class="chevron">▾</span>
+          </summary>
+          <div class="section-body">
+            <table class="glossary-table">
+              <thead>
+                <tr>
+                  <th>Metryczny (mm)</th>
+                  <th>US</th>
+                  <th>UK / Kanada</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>2.0 mm</strong></td>
+                  <td>US 0</td>
+                  <td>14</td>
+                </tr>
+                <tr>
+                  <td><strong>2.5 mm</strong></td>
+                  <td>US 1.5</td>
+                  <td>—</td>
+                </tr>
+                <tr>
+                  <td><strong>3.0 mm</strong></td>
+                  <td>US 2.5</td>
+                  <td>11</td>
+                </tr>
+                <tr>
+                  <td><strong>3.5 mm</strong></td>
+                  <td>US 4</td>
+                  <td>—</td>
+                </tr>
+                <tr>
+                  <td><strong>4.0 mm</strong></td>
+                  <td>US 6</td>
+                  <td>8</td>
+                </tr>
+                <tr>
+                  <td><strong>4.5 mm</strong></td>
+                  <td>US 7</td>
+                  <td>7</td>
+                </tr>
+                <tr>
+                  <td><strong>5.0 mm</strong></td>
+                  <td>US 8</td>
+                  <td>6</td>
+                </tr>
+                <tr>
+                  <td><strong>5.5 mm</strong></td>
+                  <td>US 9</td>
+                  <td>5</td>
+                </tr>
+                <tr>
+                  <td><strong>6.0 mm</strong></td>
+                  <td>US 10</td>
+                  <td>4</td>
+                </tr>
+                <tr>
+                  <td><strong>8.0 mm</strong></td>
+                  <td>US 11</td>
+                  <td>0</td>
+                </tr>
+                <tr>
+                  <td><strong>10.0 mm</strong></td>
+                  <td>US 15</td>
+                  <td>000</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </details>
+      </main>
+
+      <main id="stats" class="tab-content">
+        <section class="card">
+          <h2>📊 Twoje statystyki</h2>
+          <div id="statsSummary" class="stats-grid"></div>
+          <h3>Aktywność w ostatnich miesiącach</h3>
+          <div id="monthlyStats" class="bar-chart"></div><button type="button" class="btn-small"
+            onclick="loadStats()">Odśwież statystyki</button>
+        </section>
+      </main>
+
+      <main id="calendar" class="tab-content">
+        <section class="card">
+          <div class="counter-top-row">
+            <h2>🗓️ Kalendarz i przypomnienia</h2>
+            <button type="button" id="notifPermBtn" class="btn-wakelock" onclick="requestNotificationPermission()">
+              🔔 Powiadomienia
+            </button>
+          </div>
+          <p class="info-text">Dodawaj terminy przymiarek, blokowania, prania próbki i ukończenia projektu.</p>
+          <div class="input-group"><input id="reminderTitle" maxlength="160" placeholder="Tytuł przypomnienia"><input
+              id="reminderDue" type="datetime-local"><select id="reminderProject" class="form-select">
+              <option value="">Bez przypisanego projektu</option>
+            </select><textarea id="reminderNotes" rows="2" placeholder="Notatka (opcjonalnie)"></textarea><button
+              type="button" class="btn-primary" onclick="addReminder()">Dodaj przypomnienie</button></div>
+          <h3>Nadchodzące i zapisane</h3>
+          <ul id="reminderList" class="simple-list"></ul>
+        </section>
+      </main>
+
+      <!-- ZAKŁADKA 5: USTAWIENIA -->
+      <main id="settings" class="tab-content">
+        <details class="card collapsible-card" open>
+          <summary class="section-summary">
+            <span>Motyw kolorystyczny</span>
+            <span class="chevron">▾</span>
+          </summary>
+          <div class="section-body">
+            <p class="info-text">Wybierz paletę barw dopasowaną do Twojej robótki. Zmiana zapisuje się automatycznie.
+            </p>
+
+            <div class="theme-grid" id="themeGrid">
+              <button type="button" class="theme-option" data-theme-value="wild-rose"
+                onclick="selectTheme('wild-rose')">
+                <span class="theme-swatches">
+                  <i style="background:#b96d7d;"></i>
+                  <i style="background:#a77b70;"></i>
+                  <i style="background:#fbf3f3;"></i>
+                </span>
+                <span class="theme-name">Pudrowy Róż</span>
+                <span class="theme-tag">Delikatny, romantyczny i ciepły</span>
+              </button>
+
+              <button type="button" class="theme-option" data-theme-value="mint-pistachio"
+                onclick="selectTheme('mint-pistachio')">
+                <span class="theme-swatches">
+                  <i style="background:#789174;"></i>
+                  <i style="background:#a28a61;"></i>
+                  <i style="background:#f4f7f0;"></i>
+                </span>
+                <span class="theme-name">Szałwia i Pistacja</span>
+                <span class="theme-tag">Naturalny, spokojny i miękki</span>
+              </button>
+
+              <button type="button" class="theme-option" data-theme-value="ocean-blue"
+                onclick="selectTheme('ocean-blue')">
+                <span class="theme-swatches">
+                  <i style="background:#6689a8;"></i>
+                  <i style="background:#a18a76;"></i>
+                  <i style="background:#f1f5f8;"></i>
+                </span>
+                <span class="theme-name">Przydymiony Błękit</span>
+                <span class="theme-tag">Łagodny błękit z ciepłym akcentem</span>
+              </button>
+
+              <button type="button" class="theme-option" data-theme-value="honey-amber"
+                onclick="selectTheme('honey-amber')">
+                <span class="theme-swatches">
+                  <i style="background:#c18a43;"></i>
+                  <i style="background:#b77b61;"></i>
+                  <i style="background:#faf5e9;"></i>
+                </span>
+                <span class="theme-name">Miodowy Bursztyn</span>
+                <span class="theme-tag">Ciepły żółty i delikatna morela</span>
+              </button>
+            </div>
+          </div>
+        </details>
+
+        <details class="card collapsible-card" open>
+          <summary class="section-summary">
+            <span>Kopie zapasowe i raporty</span>
+            <span class="chevron">▾</span>
+          </summary>
+          <div class="section-body">
+            <p class="info-text">Zalogowano jako: <strong id="settingsUsername"></strong></p>
+            <label class="checkbox-inline" style="margin-bottom: 10px;">
+              <input type="checkbox" id="backupIncludePhotos" checked>
+              Dołącz zdjęcia i schematy do eksportu JSON
+            </label>
+            <div class="backup-actions"><button type="button" class="btn-primary" onclick="downloadBackup()">📦
+                Eksportuj kopię JSON</button><label class="btn-small file-import-label">Importuj kopię <input
+                  type="file" id="backupFile" accept=".json,application/json"
+                  onchange="importBackup(event)"></label><button type="button" class="btn-small"
+                onclick="downloadPdfReport()">📄 Pobierz raport PDF</button></div>
+            <p class="info-text">Import kopii dodaje dane do bieżącego konta; nie usuwa istniejących projektów ani
+              włóczek.</p>
+            <button type="button" onclick="logout()" class="btn-logout">Wyloguj się</button>
+          </div>
+        </details>
+
+        <details class="card collapsible-card">
+          <summary class="section-summary">
+            <span>Bezpieczeństwo konta (zmiana hasła)</span>
+            <span class="chevron">▾</span>
+          </summary>
+          <div class="section-body">
+            <form onsubmit="handleChangePassword(event)" class="input-group">
+              <input type="password" id="oldPasswordInput" placeholder="Obecne hasło" required>
+              <input type="password" id="newPasswordInput" placeholder="Nowe hasło (min. 6 znaków)" required>
+              <input type="password" id="confirmNewPasswordInput" placeholder="Powtórz nowe hasło" required>
+              <button type="submit" class="btn-primary">Zmień hasło</button>
+            </form>
+            <hr>
+            <button type="button" class="btn-danger" onclick="handleDeleteAccount()">Usuń trwale moje konto</button>
+          </div>
+        </details>
+      </main>
+    </div>
+  </div>
+
+  <!-- LIGHTBOX DO POWIĘKSZANIA ZDJĘĆ -->
+  <div id="imageLightbox" class="lightbox-overlay" style="display: none;" onclick="closeLightbox(event)">
+    <div class="lightbox-content">
+      <button type="button" class="lightbox-close" onclick="closeLightbox()" aria-label="Zamknij podgląd">✕</button>
+      <img id="lightboxImage" src="" alt="Powiększone zdjęcie">
+      <p id="lightboxCaption" class="lightbox-caption"></p>
+    </div>
+  </div>
+
+  <!-- ELEGANCKIE POWIADOMIENIA (TOASTY) -->
+  <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- MODAL POTWIERDZENIA (ZAMIAST SYSTEMOWEGO CONFIRM) -->
+  <div id="confirmModal" class="confirm-overlay" style="display: none;" role="dialog" aria-modal="true">
+    <div class="confirm-box">
+      <h3 id="confirmTitle">Potwierdź działanie</h3>
+      <p id="confirmMessage"></p>
+      <div class="confirm-actions">
+        <button type="button" id="confirmCancelBtn" class="btn-small">Anuluj</button>
+        <button type="button" id="confirmOkBtn" class="btn-primary">Potwierdź</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,156 @@
+\documentclass[11pt, a4paper]{article}
+\usepackage[a4paper, margin=2.3cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[polish]{babel}
+\usepackage{lmodern}
+\usepackage{textcomp}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+\DeclareUnicodeCharacter{2212}{-}
+\DeclareUnicodeCharacter{2194}{$\leftrightarrow$}
+\DeclareUnicodeCharacter{201E}{,,}
+\DeclareUnicodeCharacter{201D}{''}
+
+\setlist[itemize]{label=-, leftmargin=1.4em, itemsep=3pt}
+\setlist[enumerate]{leftmargin=1.6em, itemsep=3pt}
+
+\definecolor{roseaccent}{HTML}{9E4F60}
+\definecolor{mutedgray}{HTML}{475569}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=roseaccent,
+  urlcolor=roseaccent
+}
+
+\title{\textbf{\textcolor{roseaccent}{Asystent Dziergania}}\\[4pt]
+\large Zaktualizowana Dokumentacja Techniczna i Użytkowa}
+\author{Dokumentacja systemu webowego (PWA)}
+\date{Wersja zaktualizowana — Listopad 2026}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Przegląd systemu i architektura}
+\textbf{Asystent Dziergania} to aplikacja webowa typu Progressive Web App (PWA) wspomagająca planowanie, realizację oraz dokumentowanie prac dziewiarskich i szydełkowych. System opiera się na lekkiej architekturze klient--serwer z lokalnym buforowaniem zasobów statycznych oraz synchronizacją stanu użytkownika przez interfejs REST API.
+
+\subsection{Struktura plików warstwy klienckiej}
+\begin{itemize}
+  \item \texttt{static/index.html} --- struktura semantyczna interfejsu użytkownika podzielona na widoki autoryzacji, siedem zakładek roboczych, okno podglądu zdjęć (lightbox), kontener powiadomień (toasty) oraz uniwersalny modal potwierdzenia.
+  \item \texttt{static/style.css} --- arkusz stylów oparty na zmiennych CSS obsługujący cztery motywy kolorystyczne (\textit{Pudrowy Róż}, \textit{Szałwia i Pistacja}, \textit{Przydymiony Błękit}, \textit{Miodowy Bursztyn}), tryb skupienia, ujednolicone kontrolki formularzy oraz responsywne siatki.
+  \item \texttt{static/script.js} --- logika aplikacji, komunikacja z endpointami \texttt{/api/*}, obsługa stanu liczników, kompresja obrazów po stronie przeglądarki, obsługa API \texttt{WakeLock} oraz \texttt{Notification}.
+  \item \texttt{manifest.json} oraz \texttt{sw.js} --- konfiguracja instalacji PWA oraz rejestracja Service Workera.
+\end{itemize}
+
+\vspace{4ex}
+\section{Moduły funkcjonalne i nowości w aktualnej wersji}
+
+\subsection{Autoryzacja i zarządzanie kontem}
+Aplikacja udostępnia rejestrację oraz logowanie oparte na sesji (\texttt{/api/auth/login}, \texttt{/api/auth/register}, \texttt{/api/auth/me}). W zakładce \textbf{Ustawienia} użytkownik może zmienić hasło (\texttt{/api/auth/change-password}) lub trwale usunąć konto wraz ze wszystkimi powiązanymi zasobami (\texttt{/api/auth/account}).
+
+\subsection{Pracownia --- liczniki, stoper i schematy}
+Zakładka \textbf{Pracownia} stanowi główne środowisko pracy podczas dziergania i zawiera następujące mechanizmy:
+\begin{itemize}
+  \item \textbf{Licznik główny rzędów oraz przeskok do rzędu:} przyciski \texttt{+1 rząd} oraz \texttt{−}, funkcja cofnięcia ostatniego kroku (\texttt{undoLastRowStep}) oraz pole \textit{Skocz do rzędu} (\texttt{jumpToRow}), umożliwiające szybkie ustawienie dowolnego numeru rzędu (np. po pruciu robótki) wraz z zapisem zdarzenia w historii projektu.
+  \item \textbf{Szybki podgląd notatek i wzoru w Pracowni:} rozwijany panel \texttt{\#counterQuickNotesPanel} prezentuje metadane aktywnego projektu (kategorię, rozmiar, próbkę, włóczkę), link do zewnętrznego wzoru oraz pole notatek z dwukierunkowym autozapisem (debounce 400 ms) zsynchronizowanym z zakładką \textbf{Projekty}.
+  \item \textbf{Liczniki pomocnicze i mini-liczniki:} dedykowany licznik sekcji/rękawa, licznik oczek w bieżącym rzędzie (\texttt{+1}, \texttt{+10}), licznik powtórzeń wzoru oraz dowolna liczba nazwanych mini-liczników zapisywanych w bazie danych.
+  \item \textbf{Interaktywny schemat wzoru z linijką:} moduł umożliwiający wgranie obrazu schematu (z automatyczną kompresją do formatu JPEG) i przesuwanie poziomej linijki rzędów ręcznie lub automatycznie wraz ze zmianą licznika głównego.
+  \item \textbf{Przypomnienia przy rzędach (shaping):} parser reguł tekstowych (np. \textit{„dodaj oczka co 6 rzędów”}), sygnalizujący osiągnięcie wielokrotności interwału lub wskazujący najbliższy rząd zmiany.
+  \item \textbf{Stoper per projekt oraz tryb skupienia:} niezależny pomiar czasu pracy dla każdego projektu, blokada wygaszania ekranu (\texttt{Screen Wake Lock API}) oraz ukrywanie elementów pobocznych w trybie skupienia.
+\end{itemize}
+
+\subsection{Zarządzanie projektami i integracja z zapasami}
+Zakładka \textbf{Projekty} obsługuje pełny cykl życia robótki (statusy: \textit{W trakcie}, \textit{Odłożony}, \textit{Ukończony}):
+\begin{itemize}
+  \item \textbf{Powiązanie z magazynem włóczek i ostrzeganie o brakach:} podczas tworzenia lub edycji projektu użytkownik może wybrać włóczkę z zapasów oraz określić planowaną liczbę motków. Funkcje \texttt{checkProjectYarnAvailability} oraz \texttt{updateCounterYarnAlert} automatycznie weryfikują stan magazynowy i wyświetlają ostrzeżenie w formularzu oraz w \textbf{Pracowni}, gdy liczba dostępnych motków jest równa zeru lub mniejsza od zapotrzebowania.
+  \item \textbf{Lista kontrolna etapów i dziennik postępów:} checklista kroków (np. próbka, oddzielenie rękawów, blokowanie) oraz automatycznie grupowany dziennik przerobionych rzędów.
+  \item \textbf{Duplikowanie projektu:} tworzenie nowego projektu na podstawie istniejącego szablonu.
+\end{itemize}
+
+\subsection{Katalog włóczek (Stash)}
+Magazyn włóczek przechowuje szczegółowe parametry motków (nazwa, kolor i numer partii \textit{dye lot}, marka, skład, waga, metraż, zalecane druty, pielęgnacja, cena, lokalizacja, zdjęcie):
+\begin{itemize}
+  \item \textbf{Szybkie akcje zużycia i odkładania resztek:} każda karta włóczki udostępnia przycisk \textit{„Zużyłem cały motek (−1)”} (\texttt{consumeOneYarnSkein}), który pomniejsza stan o 1 motek i przy osiągnięciu zera automatycznie zmienia status na \textit{Zużyta}, oraz przycisk \textit{„Odłóż resztę do zapasu”} (\texttt{stashYarnLeftover}), przywracający pozostałą część motka do statusu \textit{W zapasie} wraz z adnotacją i datą.
+  \item \textbf{Filtrowanie po metrażu i frazie:} wyszukiwanie po nazwie, kolorze, składzie lub miejscu przechowywania oraz filtrowanie według minimalnej dostępnej liczby metrów.
+\end{itemize}
+
+\subsection{Narzędzia dziewiarskie i generator pasków}
+Zakładka \textbf{Narzędzia} zawiera pięć kalkulatorów wspierających projektowanie robótki:
+\begin{enumerate}
+  \item \textbf{Kalkulator próbki (Gauge):} przeliczenie liczby oczek i rzędów na docelowe wymiary w centymetrach z opcją bezpośredniego dopisania wyniku do notatek projektu.
+  \item \textbf{Równomierne dodawanie i odejmowanie oczek:} wyznaczanie odstępu zmian na obwodzie lub w rzędzie.
+  \item \textbf{Kalkulator zapotrzebowania na włóczkę:} szacowanie wagi, liczby motków oraz metrażu na podstawie powierzchni i masy próbki z uwzględnieniem zapasu bezpieczeństwa.
+  \item \textbf{Kalkulator długości robótki (cm $\leftrightarrow$ rzędy):} przeliczanie wysokości na liczbę rzędów oraz ustawienie wyliczonej wartości jako celu aktywnego projektu.
+  \item \textbf{Generator pasków (Stripe Generator):} projektowanie układów pasków w czterech trybach:
+    \begin{itemize}
+      \item \textit{Losowe szerokości (harmonijne)} --- dobór kolorów bez powtarzania tego samego koloru obok siebie,
+      \item \textit{Losowe z wagami kolorów} --- losowanie z uwzględnieniem wag udziału zdefiniowanych dla Koloru A, B oraz opcjonalnie C,
+      \item \textit{Powtarzalność symetryczna (lustrzana)} --- generowanie sekwencji lustrzanych (np. A--B--C--B--A),
+      \item \textit{Powtarzalna sekwencja} --- cykliczne powtarzanie podanych szerokości pasów.
+    \end{itemize}
+    Wynik prezentowany jest w postaci paska proporcji, legendy z udziałem procentowym oraz pionowego schematu rozkładu z dokładnymi zakresami rzędów od dołu (rz. 1) ku górze.
+\end{enumerate}
+
+\subsection{Statystyki, kalendarz i kopie zapasowe}
+\begin{itemize}
+  \item \textbf{Statystyki:} podsumowanie liczby projektów, ukończonych prac, łącznej liczby rzędów, stanu motków i metrów w zapasie oraz wykres miesięcznej aktywności czasowej.
+  \item \textbf{Kalendarz i przypomnienia:} zarządzanie terminami powiązanymi z projektami z obsługą powiadomień przeglądarkowych.
+  \item \textbf{Kopie zapasowe i raporty:} eksport i import pełnej kopii danych w formacie JSON (z opcjonalnym dołączeniem zdjęć i schematów) oraz generowanie raportu PDF.
+\end{itemize}
+
+\vspace{4ex}
+\section{Standardy interfejsu i bezpieczeństwa danych}
+
+\begin{table}[h!]
+\centering
+\caption{Zestawienie mechanizmów UX i bezpieczeństwa w warstwie klienckiej}
+\vspace{6pt}
+\begin{tabularx}{\textwidth}{>{\bfseries}l X}
+\toprule
+Obszar & Zastosowane rozwiązanie \\
+\midrule
+Potwierdzanie operacji & Wszystkie operacje nieodwracalne (zerowanie liczników i stopera, cofanie rzędów przy przeskoku, usuwanie projektów, włóczek, schematów, etapów checklisty, przypomnień, wylogowanie oraz usunięcie konta) wymagają akceptacji w asynchronicznym modalu \texttt{showConfirm}. \\
+\addlinespace
+Powiadomienia zwrotne & Komunikaty o błędach, ostrzeżeniach i zapisie prezentowane są w nieblokującym kontenerze toastów (\texttt{showToast}) z podziałem na typy: \texttt{success}, \texttt{warning}, \texttt{error}, \texttt{info}. \\
+\addlinespace
+Spójność formularzy & Wszystkie pola rozwijane (\texttt{<select>}) posiadają ujednoliconą wysokość (\texttt{min-height: 44px}), wewnętrzne marginesy, zaokrąglenia oraz niestandardowy wskaźnik rozwijania, dopasowany do pól tekstowych i numerycznych. \\
+\addlinespace
+Ochrona przed XSS & Dane tekstowe użytkownika przed osadzeniem w strukturze DOM są neutralizowane przy użyciu funkcji \texttt{escapeHtml} lub bezpiecznych metod \texttt{textContent}. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\newpage
+\section{Zestawienie głównych endpointów REST API}
+\begin{table}[h!]
+\centering
+\caption{Komunikacja warstwy klienckiej z serwerem aplikacji}
+\vspace{6pt}
+\begin{tabularx}{\textwidth}{l l X}
+\toprule
+\textbf{Metoda} & \textbf{Ścieżka} & \textbf{Przeznaczenie} \\
+\midrule
+\texttt{GET / POST} & \texttt{/api/projects} & Pobieranie listy projektów oraz tworzenie nowego projektu. \\
+\texttt{PATCH / DELETE} & \texttt{/api/projects/\{id\}} & Aktualizacja liczników, notatek, schematu lub usunięcie projektu. \\
+\texttt{POST} & \texttt{/api/projects/\{id\}/duplicate} & Duplikowanie projektu jako szablonu. \\
+\texttt{GET / POST} & \texttt{/api/projects/\{id\}/checklist} & Obsługa listy kontrolnej etapów projektu. \\
+\texttt{GET / POST} & \texttt{/api/projects/\{id\}/subcounters} & Zarządzanie dodatkowymi mini-licznikami projektu. \\
+\texttt{GET / POST} & \texttt{/api/projects/\{id\}/history} & Odczyt i dopisywanie wpisów w dzienniku postępów. \\
+\texttt{GET / POST} & \texttt{/api/yarns} & Pobieranie magazynu włóczek oraz dodawanie nowych motków. \\
+\texttt{PATCH / DELETE} & \texttt{/api/yarns/\{id\}} & Aktualizacja liczby motków, statusu lub usunięcie włóczki. \\
+\texttt{GET / POST} & \texttt{/api/timer} & Odczyt stanu oraz sterowanie stoperem (\texttt{start}, \texttt{pause}, \texttt{reset}). \\
+\texttt{GET / POST} & \texttt{/api/reminders} & Zarządzanie przypomnieniami w kalendarzu. \\
+\texttt{GET / POST} & \texttt{/api/backup} & Eksport i import kopii zapasowej JSON oraz raportu PDF. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\end{document}
